@@ -13,11 +13,11 @@ class BrigadaProvider extends ChangeNotifier {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // Estadísticas del sector
   int _totalVacunados = 0;
   int _totalPerros = 0;
   int _totalGatos = 0;
 
+  // GETTERS
   Map<String, dynamic>? get sectorAsignado => _sectorAsignado;
   List<UsuarioModel> get vacunadores => _vacunadores;
   bool get isLoading => _isLoading;
@@ -27,7 +27,9 @@ class BrigadaProvider extends ChangeNotifier {
   int get totalPerros => _totalPerros;
   int get totalGatos => _totalGatos;
 
-  // Obtener el sector asignado al coordinador
+  // =========================
+  // SECTOR COORDINADOR
+  // =========================
   Future<void> cargarSectorCoordinador(String coordinadorId) async {
     _setLoading(true);
 
@@ -39,20 +41,31 @@ class BrigadaProvider extends ChangeNotifier {
           .maybeSingle();
 
       if (data != null && data['sectores'] != null) {
-        _sectorAsignado = Map<String, dynamic>.from(data['sectores']);
+        _sectorAsignado =
+            Map<String, dynamic>.from(data['sectores']);
 
-        // Cargar automáticamente las estadísticas del sector
-        await cargarEstadisticasSector();
+        await _cargarTodoDelSector();
       }
-
-      _setLoading(false);
     } catch (e) {
-      _setLoading(false);
       _errorMessage = e.toString();
     }
+
+    _setLoading(false);
   }
 
-  // Cargar estadísticas del sector asignado
+  // =========================
+  // CARGA COMPLETA
+  // =========================
+  Future<void> _cargarTodoDelSector() async {
+    if (_sectorAsignado == null) return;
+
+    await cargarEstadisticasSector();
+    await cargarVacunadoresPorSector(_sectorAsignado!['id']);
+  }
+
+  // =========================
+  // ESTADÍSTICAS
+  // =========================
   Future<void> cargarEstadisticasSector() async {
     if (_sectorAsignado == null) return;
 
@@ -68,25 +81,28 @@ class BrigadaProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString();
-      notifyListeners();
     }
   }
 
-  // Obtener vacunadores
-  Future<void> cargarVacunadores() async {
+  // =========================
+  // VACUNADORES POR SECTOR (ÚNICO)
+  // =========================
+  Future<void> cargarVacunadoresPorSector(int sectorId) async {
     _setLoading(true);
 
     try {
-      _vacunadores = await _dbService.obtenerUsuariosPorRol('vacunador');
-
-      _setLoading(false);
+      _vacunadores =
+          await _dbService.obtenerVacunadoresPorSector(sectorId);
     } catch (e) {
-      _setLoading(false);
       _errorMessage = e.toString();
     }
+
+    _setLoading(false);
   }
 
-  // Registrar un nuevo vacunador
+  // =========================
+  // REGISTRAR VACUNADOR
+  // =========================
   Future<bool> registrarVacunador({
     required String cedula,
     required String nombres,
@@ -108,30 +124,83 @@ class BrigadaProvider extends ChangeNotifier {
         rol: 'vacunador',
       );
 
-      final lista = await _dbService.obtenerUsuariosPorRol('vacunador');
+      final lista =
+          await _dbService.obtenerUsuariosPorRol('vacunador');
 
-      final nuevoVacunador = lista.firstWhere(
-        (u) => u.cedula == cedula,
-      );
+      final nuevo = lista.firstWhere((u) => u.cedula == cedula);
 
       await _dbService.asignarUsuarioASector(
-        nuevoVacunador.id,
+        nuevo.id,
         sectorId,
         creadorId,
       );
 
-      await cargarVacunadores();
+      await cargarVacunadoresPorSector(sectorId);
+      await cargarEstadisticasSector();
 
       return true;
     } catch (e) {
-      _setLoading(false);
       _errorMessage = e.toString();
       return false;
+    } finally {
+      _setLoading(false);
     }
   }
 
+  // =========================
+  // REASIGNAR VACUNADOR
+  // =========================
+  Future<bool> reasignarVacunador({
+    required String usuarioId,
+    required int nuevoSectorId,
+    required String adminId,
+  }) async {
+    _setLoading(true);
+
+    try {
+      await _dbService.reasignarUsuarioASector(
+        usuarioId,
+        nuevoSectorId,
+        adminId,
+      );
+
+      // 🔥 IMPORTANTE: recargar del sector actual, no global
+      if (_sectorAsignado != null) {
+        await cargarVacunadoresPorSector(_sectorAsignado!['id']);
+      }
+
+      await cargarEstadisticasSector();
+
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  // =========================
+  // RECARGA GENERAL
+  // =========================
+  Future<void> recargarTodo(String coordinadorId) async {
+    await cargarSectorCoordinador(coordinadorId);
+  }
+
+  // =========================
+  // LOADING
+  // =========================
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
+  }
+
+  // =========================
+  // FALLBACK GENERAL
+  // =========================
+  Future<void> cargarVacunadores() async {
+    if (_sectorAsignado == null) return;
+
+    await cargarVacunadoresPorSector(_sectorAsignado!['id']);
   }
 }

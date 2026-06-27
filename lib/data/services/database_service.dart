@@ -123,4 +123,45 @@ class DatabaseService {
       rethrow;
     }
   }
+
+  Future<void> reasignarUsuarioASector(
+    String usuarioId,
+    int nuevoSectorId,
+    String updatedBy,
+  ) async {
+    try {
+      await _supabase
+          .from('asignaciones_sectores')
+          .update({
+            'sector_id': nuevoSectorId,
+            'asignado_por': updatedBy,
+          })
+          .eq('usuario_id', usuarioId);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<List<UsuarioModel>> obtenerVacunadoresPorSector(int sectorId) async {
+    final data = await _supabase
+        .from('asignaciones_sectores')
+        .select('''
+          usuario_id,
+          perfiles:usuario_id (
+            id,
+            cedula,
+            nombres,
+            apellidos,
+            correo,
+            telefono,
+            rol
+          )
+        ''')
+        .eq('sector_id', sectorId)
+        .eq('perfiles.rol', 'vacunador');
+
+    return (data as List)
+        .map((e) => UsuarioModel.fromJson(e['perfiles']))
+        .toList();
+  }
 }

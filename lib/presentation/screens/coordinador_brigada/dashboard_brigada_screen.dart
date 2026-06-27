@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../logic/auth_provider.dart';
 import '../../../logic/brigada_provider.dart';
+import 'gestion_vacunadores_screen.dart';
 
 class DashboardBrigadaScreen extends StatefulWidget {
   const DashboardBrigadaScreen({super.key});
 
   @override
-  State<DashboardBrigadaScreen> createState() => _DashboardBrigadaScreenState();
+  State<DashboardBrigadaScreen> createState() =>
+      _DashboardBrigadaScreenState();
 }
 
 class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
@@ -20,15 +22,18 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final coordId =
-          Provider.of<AuthProvider>(context, listen: false).usuarioActual!.id;
 
-      final brigada =
-          Provider.of<BrigadaProvider>(context, listen: false);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final brigada = Provider.of<BrigadaProvider>(context, listen: false);
 
-      brigada.cargarSectorCoordinador(coordId);
-      brigada.cargarVacunadores();
+      await brigada.cargarSectorCoordinador(auth.usuarioActual!.id);
+
+      final sector = brigada.sectorAsignado;
+
+      if (sector != null && sector['id'] != null) {
+        await brigada.cargarVacunadoresPorSector(sector['id']);
+      }
     });
   }
 
@@ -92,6 +97,7 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
 
               if (mounted) {
                 Navigator.pop(context);
+
                 _cedulaCtrl.clear();
                 _nombresCtrl.clear();
                 _apellidosCtrl.clear();
@@ -115,11 +121,7 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
   }
 
   Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
+      String title, String value, IconData icon, Color color) {
     return Expanded(
       child: Card(
         child: Padding(
@@ -130,15 +132,10 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
               const SizedBox(height: 8),
               Text(
                 value,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 12),
-              ),
+              Text(title, style: const TextStyle(fontSize: 12)),
             ],
           ),
         ),
@@ -148,26 +145,26 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final brigadaProvider = Provider.of<BrigadaProvider>(context);
-    final sector = brigadaProvider.sectorAsignado;
+    final auth = Provider.of<AuthProvider>(context);
+    final brigada = Provider.of<BrigadaProvider>(context);
+    final sector = brigada.sectorAsignado;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Brigada: ${authProvider.usuarioActual?.nombres}'),
+        title: Text('Brigada: ${auth.usuarioActual?.nombres}'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => authProvider.salir(),
+            onPressed: () => auth.salir(),
           )
         ],
       ),
-      body: brigadaProvider.isLoading
+      body: brigada.isLoading
           ? const Center(child: CircularProgressIndicator())
           : Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -186,21 +183,20 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                             ? sector['nombre'].toString().toUpperCase()
                             : 'Buscando sector...',
                         style: const TextStyle(
-                          fontSize: 18,
-                          color: Colors.teal,
-                          fontWeight: FontWeight.w500,
-                        ),
+                            fontSize: 18,
+                            color: Colors.teal,
+                            fontWeight: FontWeight.w500),
                       ),
                     ),
                   ),
 
                   const SizedBox(height: 20),
 
-                  // ESTADÍSTICAS (NUEVO)
+                  // ESTADÍSTICAS
                   const Text(
                     'Estadísticas del sector',
-                    style: TextStyle(
-                        fontSize: 18, fontWeight: FontWeight.bold),
+                    style:
+                        TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 10),
@@ -209,19 +205,19 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                     children: [
                       _buildStatCard(
                         'Vacunados',
-                        brigadaProvider.totalVacunados.toString(),
+                        brigada.totalVacunados.toString(),
                         Icons.health_and_safety,
                         Colors.green,
                       ),
                       _buildStatCard(
                         'Perros',
-                        brigadaProvider.totalPerros.toString(),
+                        brigada.totalPerros.toString(),
                         Icons.pets,
                         Colors.blue,
                       ),
                       _buildStatCard(
                         'Gatos',
-                        brigadaProvider.totalGatos.toString(),
+                        brigada.totalGatos.toString(),
                         Icons.pets_outlined,
                         Colors.orange,
                       ),
@@ -240,31 +236,51 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       if (sector != null)
-                        ElevatedButton.icon(
-                          onPressed: () => _mostrarDialogoVacunador(
-                              authProvider.usuarioActual!.id,
-                              sector['id']),
-                          icon: const Icon(Icons.person_add),
-                          label: const Text('Añadir Vacunador'),
+                        Row(
+                          children: [
+                            ElevatedButton.icon(
+                              onPressed: () => _mostrarDialogoVacunador(
+                                  auth.usuarioActual!.id,
+                                  sector['id']),
+                              icon: const Icon(Icons.person_add),
+                              label: const Text('Añadir Vacunador'),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.teal),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const GestionVacunadoresScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.manage_accounts),
+                              label: const Text('Gestionar Vacunadores'),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.teal.shade700),
+                            ),
+                          ],
                         ),
                     ],
                   ),
 
                   const SizedBox(height: 10),
 
-                  // LISTA VACUNADORES
+                  // LISTA
                   Expanded(
-                    child: brigadaProvider.vacunadores.isEmpty
+                    child: brigada.vacunadores.isEmpty
                         ? const Center(
-                            child: Text(
-                              'No tienes vacunadores registrados todavía.',
-                            ),
+                            child:
+                                Text('No tienes vacunadores registrados.'),
                           )
                         : ListView.builder(
-                            itemCount: brigadaProvider.vacunadores.length,
+                            itemCount: brigada.vacunadores.length,
                             itemBuilder: (context, index) {
-                              final vacunador =
-                                  brigadaProvider.vacunadores[index];
+                              final v = brigada.vacunadores[index];
 
                               return Card(
                                 child: ListTile(
@@ -273,9 +289,9 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                                     child: Icon(Icons.badge,
                                         color: Colors.white),
                                   ),
-                                  title: Text(vacunador.nombreCompleto),
+                                  title: Text(v.nombreCompleto),
                                   subtitle: Text(
-                                    'Cédula: ${vacunador.cedula} | Correo: ${vacunador.correo}',
+                                    'Cédula: ${v.cedula} | Correo: ${v.correo}',
                                   ),
                                 ),
                               );
