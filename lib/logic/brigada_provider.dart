@@ -115,7 +115,9 @@ class BrigadaProvider extends ChangeNotifier {
     _setLoading(true);
 
     try {
-      await _dbService.crearUsuarioPorRol(
+      // crearUsuarioPorRol devuelve el UUID del nuevo usuario directamente,
+      // evitando la búsqueda extra por cédula que podía fallar por timing.
+      final nuevoId = await _dbService.crearUsuarioPorRol(
         cedula: cedula,
         nombres: nombres,
         apellidos: apellidos,
@@ -124,13 +126,8 @@ class BrigadaProvider extends ChangeNotifier {
         rol: 'vacunador',
       );
 
-      final lista =
-          await _dbService.obtenerUsuariosPorRol('vacunador');
-
-      final nuevo = lista.firstWhere((u) => u.cedula == cedula);
-
       await _dbService.asignarUsuarioASector(
-        nuevo.id,
+        nuevoId,
         sectorId,
         creadorId,
       );

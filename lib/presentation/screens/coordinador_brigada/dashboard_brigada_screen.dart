@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../logic/auth_provider.dart';
 import '../../../logic/brigada_provider.dart';
+import 'correccion_registros_screen.dart';
 import 'gestion_vacunadores_screen.dart';
 
 class DashboardBrigadaScreen extends StatefulWidget {
@@ -156,6 +157,14 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Recargar',
+            onPressed: () async {
+              final coordId = auth.usuarioActual!.id;
+              await brigada.recargarTodo(coordId);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => auth.salir(),
           )
@@ -236,7 +245,9 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       if (sector != null)
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             ElevatedButton.icon(
                               onPressed: () => _mostrarDialogoVacunador(
@@ -247,7 +258,6 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.teal),
                             ),
-                            const SizedBox(width: 10),
                             ElevatedButton.icon(
                               onPressed: () {
                                 Navigator.push(
@@ -259,9 +269,24 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                                 );
                               },
                               icon: const Icon(Icons.manage_accounts),
-                              label: const Text('Gestionar Vacunadores'),
+                              label: const Text('Gestionar'),
                               style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.teal.shade700),
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const CorreccionRegistrosScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.edit_note),
+                              label: const Text('Corregir Registros'),
+                              style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange.shade700),
                             ),
                           ],
                         ),

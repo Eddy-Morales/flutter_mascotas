@@ -158,13 +158,20 @@ class VacunadorProvider extends ChangeNotifier {
     }
   }
 
-  // 5. Modificar/Editar un registro propio con auditoría relacional nativa
+  // 5. Editar un registro propio — todos los campos relevantes excepto GPS y foto
   Future<bool> actualizarRegistroPropio({
     required int registroId,
     required String nombreMascota,
     required String edadAproximada,
     required String observaciones,
     required String usuarioModificadorId,
+    // Campos adicionales ahora editables
+    String? nombrePropietario,
+    String? cedulaPropietario,
+    String? telefonoPropietario,
+    String? tipoMascota,   // 'perro' | 'gato'
+    String? sexoMascota,   // 'macho' | 'hembra'
+    String? vacunaAplicada,
   }) async {
     _setLoading(true);
     _errorMessage = null;
@@ -175,6 +182,16 @@ class VacunadorProvider extends ChangeNotifier {
         'observaciones': observaciones,
         'modificado_por': usuarioModificadorId,
         'ultima_modificacion': DateTime.now().toIso8601String(),
+        if (nombrePropietario != null && nombrePropietario.isNotEmpty)
+          'nombre_propietario': nombrePropietario,
+        if (cedulaPropietario != null && cedulaPropietario.isNotEmpty)
+          'cedula_propietario': cedulaPropietario,
+        if (telefonoPropietario != null && telefonoPropietario.isNotEmpty)
+          'telefono_propietario': telefonoPropietario,
+        if (tipoMascota != null) 'tipo_mascota': tipoMascota,
+        if (sexoMascota != null) 'sexo_mascota': sexoMascota,
+        if (vacunaAplicada != null && vacunaAplicada.isNotEmpty)
+          'vacuna_aplicada': vacunaAplicada,
       }).eq('id', registroId);
 
       _setLoading(false);

@@ -193,11 +193,11 @@ class _DashboardCampanaScreenState extends State<DashboardCampanaScreen> {
                 // --- SECCIÓN KPIs ---
                 Row(
                   children: [
-                    _buildCardKpi("Total Vacunados", sectorProvider.totalVacunados.toString(), Colors.teal, Icons.analytics),
+                    _buildCardKpi("Vacunados", sectorProvider.totalVacunados.toString(), Colors.green, Icons.health_and_safety),
                     const SizedBox(width: 10),
                     _buildCardKpi("Perros", sectorProvider.totalPerros.toString(), Colors.blue, Icons.pets),
                     const SizedBox(width: 10),
-                    _buildCardKpi("Gatos", sectorProvider.totalGatos.toString(), Colors.orange, Icons.pets),
+                    _buildCardKpi("Gatos", sectorProvider.totalGatos.toString(), Colors.orange, Icons.pets_outlined),
                   ],
                 ),
                 const SizedBox(height: 25),
@@ -281,21 +281,20 @@ class _DashboardCampanaScreenState extends State<DashboardCampanaScreen> {
 
   Widget _buildCardKpi(String titulo, String valor, Color color, IconData icono) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.3), width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icono, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(valor, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-            Text(titulo, style: const TextStyle(fontSize: 11, color: Colors.black54, overflow: TextOverflow.ellipsis)),
-          ],
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            children: [
+              Icon(icono, color: color, size: 30),
+              const SizedBox(height: 8),
+              Text(
+                valor,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              Text(titulo, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
         ),
       ),
     );

@@ -140,6 +140,15 @@ class _GestionVacunadoresScreenState
         foregroundColor: Colors.white,
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Recargar',
+            onPressed: () async {
+              final coordId = auth.usuarioActual!.id;
+              final brigada = context.read<BrigadaProvider>();
+              await brigada.recargarTodo(coordId);
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => auth.salir(),
           )

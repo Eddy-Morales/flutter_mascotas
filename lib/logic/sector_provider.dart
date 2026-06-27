@@ -92,8 +92,8 @@ class SectorProvider extends ChangeNotifier {
 
     _setLoading(true);
     try {
-      // A. Crear la cuenta en auth.users y registrarlo en perfiles usando tu servicio base
-      await _dbService.crearUsuarioPorRol(
+      // crearUsuarioPorRol devuelve el UUID del nuevo usuario directamente.
+      final nuevoId = await _dbService.crearUsuarioPorRol(
         cedula: cedula,
         nombres: nombres,
         apellidos: apellidos,
@@ -102,12 +102,7 @@ class SectorProvider extends ChangeNotifier {
         rol: 'coordinador_brigada',
       );
 
-      // B. Consultar el ID generado para vincularlo al sector correspondiente
-      final listaActualizada = await _dbService.obtenerUsuariosPorRol('coordinador_brigada');
-      final nuevoCoordinador = listaActualizada.firstWhere((u) => u.cedula == cedula);
-
-      // C. Insertar la asignación en tu tabla de rompimiento/relacional
-      await _dbService.asignarUsuarioASector(nuevoCoordinador.id, sectorId, creadorId);
+      await _dbService.asignarUsuarioASector(nuevoId, sectorId, creadorId);
       
       await cargarCoordinadores();
       return true;

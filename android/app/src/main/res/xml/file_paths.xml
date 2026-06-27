@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Rutas expuestas por FileProvider para image_picker.
+  Requerido por Android 7+ para compartir archivos de cámara mediante URI de contenido.
+-->
+<paths>
+    <!-- Archivos de cámara temporales en caché externa -->
+    <external-cache-path name="external_cache" path="." />
+    <!-- Archivos de cámara temporales en caché interna -->
+    <cache-path name="internal_cache" path="." />
+    <!-- Archivos externos (galería en Android < 10) -->
+    <external-path name="external_files" path="." />
+</paths>

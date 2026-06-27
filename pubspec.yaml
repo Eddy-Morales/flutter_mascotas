@@ -61,6 +61,39 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  # Ícono de app y splash screen
+  flutter_launcher_icons: ^0.14.3
+  flutter_native_splash: ^2.4.6
+
+# ══ CONFIGURACIÓN: Ícono de la app ══════════════════════════════════════════
+flutter_launcher_icons:
+  android: true
+  ios: false    # Proyecto solo Android
+  # Ruta a tu imagen (512x512 px o mayor, PNG)
+  image_path: "assets/icon/app_icon.png"
+  # Ícono adaptativo para Android 8+ (fondo + primer plano separados)
+  adaptive_icon_background: "#00838F"   # Teal suave (acorde al tema de la app)
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  min_sdk_android: 21
+  web:
+    generate: false
+
+# ══ CONFIGURACIÓN: Splash Screen ════════════════════════════════════════════
+flutter_native_splash:
+  # Color de fondo del splash
+  color: "#00838F"           # Teal suave — igual que el ícono
+  # Imagen centrada en el splash (puede ser el mismo ícono)
+  image: "assets/icon/app_icon.png"
+  # Modo oscuro: teal más profundo
+  color_dark: "#004D56"
+  image_dark: "assets/icon/app_icon.png"
+  android: true
+  ios: false    # Proyecto solo Android
+  # Android 12+ tiene su propio sistema de splash
+  android_12:
+    color: "#00838F"
+    image: "assets/icon/app_icon.png"
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -73,9 +106,8 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/icon/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

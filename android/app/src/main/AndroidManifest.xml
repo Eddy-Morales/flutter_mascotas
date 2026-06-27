@@ -1,5 +1,26 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- ══ PERMISOS ══════════════════════════════════════════════════════ -->
+
+    <!-- Internet (Supabase, Storage) -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Ubicación precisa (GPS para registros de vacunación) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <!-- Ubicación aproximada (fallback / requerida junto con FINE en API 31+) -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+
+    <!-- Cámara (image_picker: captura de foto del animal) -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Lectura de almacenamiento externo (imagen de galería, API <= 32) -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32"/>
+    <!-- Lectura de imágenes (API 33+ granular) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+
     <application
         android:label="mascotas2"
         android:name="${applicationName}"
@@ -40,6 +61,17 @@
 
         </activity>
 
+        <!-- FileProvider requerido por image_picker para compartir archivos de cámara (Android 7+) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+
         <!-- Flutter -->
         <meta-data
             android:name="flutterEmbedding"
@@ -52,6 +84,12 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Necesario para app_links / deep links -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <category android:name="android.intent.category.BROWSABLE"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 

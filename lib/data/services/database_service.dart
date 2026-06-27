@@ -29,17 +29,23 @@ class DatabaseService {
 
   // Crear un usuario secundario (Coordinador de Brigada o Vacunador)
   // Nota: Al usar signUp, registramos en Auth y el trigger/perfil manual insertará los datos.
-  Future<void> crearUsuarioPorRol({
+  /// Crea un usuario nuevo (vacunador o coordinador_brigada) y devuelve su UUID.
+  /// IMPORTANTE: signUp() cambia la sesión activa al nuevo usuario. Aquí se
+  /// restaura la sesión del coordinador ANTES de hacer el upsert en perfiles,
+  /// para que la operación se ejecute con los permisos correctos.
+  Future<String> crearUsuarioPorRol({
     required String cedula,
     required String nombres,
     required String apellidos,
     required String telefono,
     required String correo,
-    required String rol, // 'coordinador_brigada' o 'vacunador'
+    required String rol,
   }) async {
+    final sessionActual = _supabase.auth.currentSession;
+    String? nuevoUserId;
+
     try {
-      // Registramos en el Auth de Supabase con la contraseña obligatoria Ecuador2026
-      // Pasamos los datos adicionales en data para que los podamos mapear al crear el perfil
+      // signUp() registra el usuario Y cambia la sesión activa al nuevo usuario.
       final AuthResponse response = await _supabase.auth.signUp(
         email: correo,
         password: 'Ecuador2026',
@@ -51,24 +57,33 @@ class DatabaseService {
           'rol': rol,
         },
       );
-
-      if (response.user != null) {
-        // Para asegurar que se inserte correctamente en perfiles si desactivamos el trigger remoto,
-        // hacemos un insert preventivo/directo en la tabla perfiles
-        await _supabase.from('perfiles').insert({
-          'id': response.user!.id,
-          'cedula': cedula,
-          'nombres': nombres,
-          'apellidos': apellidos,
-          'telefono': telefono,
-          'correo': correo,
-          'rol': rol,
-          'requiere_cambio_clave': true,
-        });
+      nuevoUserId = response.user?.id;
+    } finally {
+      // Restaurar la sesión del coordinador ANTES del upsert.
+      // Así el upsert se ejecuta con los permisos del coordinador, no del vacunador.
+      if (sessionActual != null) {
+        await _supabase.auth.setSession(sessionActual.refreshToken!);
       }
-    } catch (e) {
-      rethrow;
     }
+
+    if (nuevoUserId == null) {
+      throw Exception('signUp no devolvió un usuario. Verifica que la confirmación de email esté desactivada en Supabase.');
+    }
+
+    // El trigger handle_new_user puede haber insertado ya el perfil.
+    // Usamos upsert para garantizar que los datos sean correctos sin error de duplicado.
+    await _supabase.from('perfiles').upsert({
+      'id': nuevoUserId,
+      'cedula': cedula,
+      'nombres': nombres,
+      'apellidos': apellidos,
+      'telefono': telefono,
+      'correo': correo,
+      'rol': rol,
+      'requiere_cambio_clave': true,
+    });
+
+    return nuevoUserId;
   }
 
   // Asignar un usuario a un sector específico
@@ -79,6 +94,57 @@ class DatabaseService {
         'sector_id': sectorId,
         'asignado_por': asignadoPorId,
       });
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Obtener todas las vacunaciones de un sector (para el coordinador de brigada)
+  Future<List<Map<String, dynamic>>> obtenerVacunacionesPorSector(int sectorId) async {
+    try {
+      final data = await _supabase
+          .from('vacunaciones')
+          .select('*, perfiles:vacunador_id(nombres, apellidos)')
+          .eq('sector_id', sectorId)
+          .order('fecha_hora', ascending: false);
+      return List<Map<String, dynamic>>.from(data);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Corregir un registro de vacunación (usado por el coordinador de brigada)
+  Future<void> corregirVacunacion({
+    required int registroId,
+    required String nombreMascota,
+    required String edadAproximada,
+    required String observaciones,
+    required String coordinadorId,
+    String? nombrePropietario,
+    String? cedulaPropietario,
+    String? telefonoPropietario,
+    String? tipoMascota,
+    String? sexoMascota,
+    String? vacunaAplicada,
+  }) async {
+    try {
+      await _supabase.from('vacunaciones').update({
+        'nombre_mascota': nombreMascota,
+        'edad_aproximada': edadAproximada,
+        'observaciones': observaciones,
+        'modificado_por': coordinadorId,
+        'ultima_modificacion': DateTime.now().toIso8601String(),
+        if (nombrePropietario != null && nombrePropietario.isNotEmpty)
+          'nombre_propietario': nombrePropietario,
+        if (cedulaPropietario != null && cedulaPropietario.isNotEmpty)
+          'cedula_propietario': cedulaPropietario,
+        if (telefonoPropietario != null && telefonoPropietario.isNotEmpty)
+          'telefono_propietario': telefonoPropietario,
+        if (tipoMascota != null) 'tipo_mascota': tipoMascota,
+        if (sexoMascota != null) 'sexo_mascota': sexoMascota,
+        if (vacunaAplicada != null && vacunaAplicada.isNotEmpty)
+          'vacuna_aplicada': vacunaAplicada,
+      }).eq('id', registroId);
     } catch (e) {
       rethrow;
     }
@@ -143,25 +209,24 @@ class DatabaseService {
   }
 
   Future<List<UsuarioModel>> obtenerVacunadoresPorSector(int sectorId) async {
-    final data = await _supabase
+    // Paso 1: obtener los IDs de usuarios asignados a este sector.
+    // Consulta simple y directa, sin joins que puedan fallar al filtrar.
+    final asignaciones = await _supabase
         .from('asignaciones_sectores')
-        .select('''
-          usuario_id,
-          perfiles:usuario_id (
-            id,
-            cedula,
-            nombres,
-            apellidos,
-            correo,
-            telefono,
-            rol
-          )
-        ''')
-        .eq('sector_id', sectorId)
-        .eq('perfiles.rol', 'vacunador');
+        .select('usuario_id')
+        .eq('sector_id', sectorId);
 
-    return (data as List)
-        .map((e) => UsuarioModel.fromJson(e['perfiles']))
-        .toList();
+    if ((asignaciones as List).isEmpty) return [];
+
+    final ids = asignaciones.map((e) => e['usuario_id'] as String).toList();
+
+    // Paso 2: obtener perfiles cuyo id esté en esa lista Y rol sea vacunador.
+    final data = await _supabase
+        .from('perfiles')
+        .select()
+        .eq('rol', 'vacunador')
+        .inFilter('id', ids);
+
+    return (data as List).map((e) => UsuarioModel.fromJson(e)).toList();
   }
 }
