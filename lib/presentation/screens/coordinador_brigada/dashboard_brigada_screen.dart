@@ -238,57 +238,59 @@ class _DashboardBrigadaScreenState extends State<DashboardBrigadaScreen> {
                   // VACUNADORES
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start, // importante
                     children: [
                       const Text(
                         'Vacunadores a cargo:',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       if (sector != null)
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            ElevatedButton.icon(
-                              onPressed: () => _mostrarDialogoVacunador(
-                                  auth.usuarioActual!.id,
-                                  sector['id']),
-                              icon: const Icon(Icons.person_add),
-                              label: const Text('Añadir Vacunador'),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.teal),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const GestionVacunadoresScreen(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.manage_accounts),
-                              label: const Text('Gestionar'),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.teal.shade700),
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        const CorreccionRegistrosScreen(),
-                                  ),
-                                );
-                              },
-                              icon: const Icon(Icons.edit_note),
-                              label: const Text('Corregir Registros'),
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.orange.shade700),
-                            ),
-                          ],
+                        Expanded( // 🔑
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              ElevatedButton.icon(
+                                onPressed: () => _mostrarDialogoVacunador(
+                                    auth.usuarioActual!.id,
+                                    sector['id']),
+                                icon: const Icon(Icons.person_add),
+                                label: const Text('Añadir Vacunador'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.teal,
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const GestionVacunadoresScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.manage_accounts),
+                                label: const Text('Gestionar'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.teal.shade700,
+                                ),
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const CorreccionRegistrosScreen(),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.edit_note),
+                                label: const Text('Corregir Registros'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.orange.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                     ],
                   ),

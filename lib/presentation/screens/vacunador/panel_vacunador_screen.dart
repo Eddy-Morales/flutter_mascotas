@@ -53,6 +53,7 @@ class _PanelVacunadorScreenState extends State<PanelVacunadorScreen> {
       Provider.of<VacunadorProvider>(context, listen: false).cargarMisRegistros(user.id);
     });
   }
+  
 
   @override
   void dispose() {
@@ -252,50 +253,59 @@ class _PanelVacunadorScreenState extends State<PanelVacunadorScreen> {
                           // Captura
                           const _SeccionLabel('Evidencia requerida', Icons.camera_alt),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _CaptureButton(
-                                  icon: Icons.camera_alt,
-                                  label: vacunadorProvider.fotoCapturada != null
-                                      ? 'Foto capturada'
-                                      : 'Tomar Foto',
-                                  done: vacunadorProvider.fotoCapturada != null,
-                                  onTap: () => vacunadorProvider.tomarFoto(),
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: _CaptureButton(
-                                  icon: Icons.gps_fixed,
-                                  label: vacunadorProvider.posicionActual != null
-                                      ? 'GPS capturado'
-                                      : 'Capturar GPS',
-                                  done: vacunadorProvider.posicionActual != null,
-                                  onTap: () => vacunadorProvider.obtenerUbicacion(),
-                                ),
-                              ),
-                            ],
+
+                          Consumer<VacunadorProvider>(
+                            builder: (_, vacunadorProvider, __) {
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _CaptureButton(
+                                          icon: Icons.camera_alt,
+                                          label: vacunadorProvider.fotoCapturada != null
+                                              ? 'Foto capturada'
+                                              : 'Tomar Foto',
+                                          done: vacunadorProvider.fotoCapturada != null,
+                                          onTap: () => vacunadorProvider.tomarFoto(),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: _CaptureButton(
+                                          icon: Icons.gps_fixed,
+                                          label: vacunadorProvider.posicionActual != null
+                                              ? 'GPS capturado'
+                                              : 'Capturar GPS',
+                                          done: vacunadorProvider.posicionActual != null,
+                                          onTap: () => vacunadorProvider.obtenerUbicacion(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  if (vacunadorProvider.webImageBytes != null) ...[
+                                    const SizedBox(height: 12),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.memory(
+                                        vacunadorProvider.webImageBytes!,
+                                        height: 160,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ],
+                                  if (vacunadorProvider.errorMessage != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Text(
+                                        vacunadorProvider.errorMessage!,
+                                        style: const TextStyle(color: Colors.red, fontSize: 12),
+                                      ),
+                                    ),
+                                ],
+                              );
+                            },
                           ),
-                          if (vacunadorProvider.webImageBytes != null) ...[
-                            const SizedBox(height: 12),
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.memory(
-                                vacunadorProvider.webImageBytes!,
-                                height: 160,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ],
-                          if (vacunadorProvider.errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 8),
-                              child: Text(
-                                vacunadorProvider.errorMessage!,
-                                style: const TextStyle(color: Colors.red, fontSize: 12),
-                              ),
-                            ),
                           const SizedBox(height: 24),
                           ElevatedButton.icon(
                             style: ElevatedButton.styleFrom(
