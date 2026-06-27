@@ -9,17 +9,28 @@ class BrigadaProvider extends ChangeNotifier {
 
   Map<String, dynamic>? _sectorAsignado;
   List<UsuarioModel> _vacunadores = [];
+
   bool _isLoading = false;
   String? _errorMessage;
+
+  // Estadísticas del sector
+  int _totalVacunados = 0;
+  int _totalPerros = 0;
+  int _totalGatos = 0;
 
   Map<String, dynamic>? get sectorAsignado => _sectorAsignado;
   List<UsuarioModel> get vacunadores => _vacunadores;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
-  // 1. Buscar qué sector tiene asignado el coordinador actual
+  int get totalVacunados => _totalVacunados;
+  int get totalPerros => _totalPerros;
+  int get totalGatos => _totalGatos;
+
+  // Obtener el sector asignado al coordinador
   Future<void> cargarSectorCoordinador(String coordinadorId) async {
     _setLoading(true);
+
     try {
       final data = await _supabase
           .from('asignaciones_sectores')
@@ -29,7 +40,11 @@ class BrigadaProvider extends ChangeNotifier {
 
       if (data != null && data['sectores'] != null) {
         _sectorAsignado = Map<String, dynamic>.from(data['sectores']);
+
+        // Cargar automáticamente las estadísticas del sector
+        await cargarEstadisticasSector();
       }
+
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
@@ -37,11 +52,33 @@ class BrigadaProvider extends ChangeNotifier {
     }
   }
 
-  // 2. Obtener la lista de vacunadores registrados en el sistema
+  // Cargar estadísticas del sector asignado
+  Future<void> cargarEstadisticasSector() async {
+    if (_sectorAsignado == null) return;
+
+    try {
+      final datos = await _dbService.obtenerEstadisticasSector(
+        _sectorAsignado!['id'],
+      );
+
+      _totalVacunados = datos['vacunados'] ?? 0;
+      _totalPerros = datos['perros'] ?? 0;
+      _totalGatos = datos['gatos'] ?? 0;
+
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = e.toString();
+      notifyListeners();
+    }
+  }
+
+  // Obtener vacunadores
   Future<void> cargarVacunadores() async {
     _setLoading(true);
+
     try {
       _vacunadores = await _dbService.obtenerUsuariosPorRol('vacunador');
+
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
@@ -49,7 +86,7 @@ class BrigadaProvider extends ChangeNotifier {
     }
   }
 
-  // 3. Crear un nuevo Vacunador y asignarlo automáticamente a su sector
+  // Registrar un nuevo vacunador
   Future<bool> registrarVacunador({
     required String cedula,
     required String nombres,
@@ -60,6 +97,7 @@ class BrigadaProvider extends ChangeNotifier {
     required String creadorId,
   }) async {
     _setLoading(true);
+
     try {
       await _dbService.crearUsuarioPorRol(
         cedula: cedula,
@@ -70,14 +108,20 @@ class BrigadaProvider extends ChangeNotifier {
         rol: 'vacunador',
       );
 
-      // Buscamos el ID asignado al vacunador recién creado
       final lista = await _dbService.obtenerUsuariosPorRol('vacunador');
-      final nuevoVacunador = lista.firstWhere((u) => u.cedula == cedula);
 
-      // Lo vinculamos relacionalmente al sector de la brigada
-      await _dbService.asignarUsuarioASector(nuevoVacunador.id, sectorId, creadorId);
-      
+      final nuevoVacunador = lista.firstWhere(
+        (u) => u.cedula == cedula,
+      );
+
+      await _dbService.asignarUsuarioASector(
+        nuevoVacunador.id,
+        sectorId,
+        creadorId,
+      );
+
       await cargarVacunadores();
+
       return true;
     } catch (e) {
       _setLoading(false);

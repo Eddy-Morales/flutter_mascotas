@@ -93,4 +93,34 @@ class DatabaseService {
       rethrow;
     }
   }
+
+    // Obtener estadísticas de un sector
+  Future<Map<String, int>> obtenerEstadisticasSector(int sectorId) async {
+    try {
+      final vacunados = await _supabase
+          .from('vacunaciones')
+          .select('id')
+          .eq('sector_id', sectorId);
+
+      final perros = await _supabase
+          .from('vacunaciones')
+          .select('id')
+          .eq('sector_id', sectorId)
+          .eq('tipo_mascota', 'perro');
+
+      final gatos = await _supabase
+          .from('vacunaciones')
+          .select('id')
+          .eq('sector_id', sectorId)
+          .eq('tipo_mascota', 'gato');
+
+      return {
+        'vacunados': vacunados.length,
+        'perros': perros.length,
+        'gatos': gatos.length,
+      };
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
