@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../logic/auth_provider.dart';
-import 'recuperar_clave_screen.dart'; // La crearemos luego si la necesitas
+import 'recuperar_clave_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -14,6 +14,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
   bool _obscureText = true;
 
   @override
@@ -26,8 +27,11 @@ class _LoginScreenState extends State<LoginScreen> {
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+    final authProvider = Provider.of<AuthProvider>(
+      context,
+      listen: false,
+    );
+
     bool exito = await authProvider.ingresar(
       _emailController.text.trim(),
       _passwordController.text.trim(),
@@ -36,7 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!exito && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(authProvider.errorMessage ?? 'Error al iniciar sesión'),
+          content: Text(
+            authProvider.errorMessage ?? 'Error al iniciar sesión',
+          ),
           backgroundColor: Colors.red,
         ),
       );
@@ -54,19 +60,31 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Form(
             key: _formKey,
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.pets, size: 80, color: Colors.teal),
+                const Icon(
+                  Icons.pets,
+                  size: 80,
+                  color: Colors.teal,
+                ),
+
                 const SizedBox(height: 16),
+
                 const Text(
                   'Campaña de Vacunación',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal),
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
                 ),
+
                 const SizedBox(height: 32),
-                
-                // Campo Correo
+
+                // ==========================
+                // CORREO
+                // ==========================
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -76,14 +94,23 @@ class _LoginScreenState extends State<LoginScreen> {
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Ingrese su correo';
-                    if (!value.contains('@')) return 'Correo no válido';
+                    if (value == null || value.isEmpty) {
+                      return 'Ingrese su correo';
+                    }
+
+                    if (!value.contains('@')) {
+                      return 'Correo no válido';
+                    }
+
                     return null;
                   },
                 ),
+
                 const SizedBox(height: 16),
 
-                // Campo Contraseña
+                // ==========================
+                // CONTRASEÑA
+                // ==========================
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscureText,
@@ -92,27 +119,75 @@ class _LoginScreenState extends State<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock),
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
-                      icon: Icon(_obscureText ? Icons.visibility_off : Icons.visibility),
-                      onPressed: () => setState(() => _obscureText = !_obscureText),
+                      icon: Icon(
+                        _obscureText
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) return 'Ingrese su contraseña';
+                    if (value == null || value.isEmpty) {
+                      return 'Ingrese su contraseña';
+                    }
                     return null;
                   },
                 ),
-                const SizedBox(height: 24),
 
-                // Botón Ingresar
+                // ==========================
+                // OLVIDASTE CONTRASEÑA
+                // ==========================
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const RecuperarClaveScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      '¿Olvidaste tu contraseña?',
+                      style: TextStyle(
+                        color: Colors.teal,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                // ==========================
+                // BOTÓN LOGIN
+                // ==========================
                 authProvider.isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const Center(
+                        child: CircularProgressIndicator(),
+                      )
                     : ElevatedButton(
                         onPressed: _submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.teal,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                          ),
                         ),
-                        child: const Text('Iniciar Sesión', style: TextStyle(fontSize: 16, color: Colors.white)),
+                        child: const Text(
+                          'Iniciar Sesión',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
               ],
             ),

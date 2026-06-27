@@ -36,7 +36,8 @@ dependencies:
   # Gestión de Estado fácil de defender en la sustentación
   provider: ^6.1.2
 
-  
+  # Enlaces de aplicación
+  app_links: ^6.4.0
 
   # Geolocalización y Cámara
   geolocator: ^13.0.0
