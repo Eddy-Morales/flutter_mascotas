@@ -73,8 +73,13 @@ El Vacunador registra las vacunas aplicadas y consulta la información correspon
 
 Las credenciales proporcionadas corresponden a usuarios de prueba para demostrar las funcionalidades del sistema.
 
+---
 
+## Videos
 
+Eddy Morales:
+
+Paulo Cisneros:
 
 
 
